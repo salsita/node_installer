@@ -17,7 +17,7 @@ cat > "$INSTALLER_PATH" << 'EOF'
 set -e
 
 print_help() {
-echo 'Usage:
+echo 'Usage as root or with sudo:
   node_installer 8.9.1 # this installs 8.9.1 version
   node_installer clean # this cleans your system from older installations done via this script
   node_installer help # prints this help'
