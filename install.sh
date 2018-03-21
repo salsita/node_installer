@@ -52,23 +52,38 @@ if [[ ! "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] ; then
 fi
 
 NODE="$1"
-TARGET="node-v"$NODE"-linux-x64"
+TARGET=
+case $(uname) in
+  "Linux")
+    TARGET="node-v"$NODE"-linux-x64"
+    ;;
+  "Darwin")
+    TARGET="node-v"$NODE"-darwin-x64"
+    ;;
+   *)
+    echo "System not supported"
+    exit 3
+    ;;
+esac
 
 clean_previous_installations
 
-which wget || {
+which wget >/dev/null || {
   echo "wget command not found"
-  exit 3
+  exit 4
 }
+
+echo "Downloading"
 
 export TMP_DIR=$( mktemp -d )
 cd "$TMP_DIR"
-wget https://nodejs.org/dist/v"$NODE"/"$TARGET".tar.xz || {
+wget -q https://nodejs.org/dist/v"$NODE"/"$TARGET".tar.xz || {
   echo "node version not found"
   echo "please provide existing version"
   rm -rf "$TMP_DIR"
-  exit 4
+  exit 5
 }
+echo "Installing"
 tar xf "$TARGET".tar.xz
 rm -rf "$TARGET".tar.xz
 cp -r "$TARGET"/bin/node /usr/local/bin/
@@ -78,6 +93,8 @@ cd /usr/local/bin
 ln -s ../lib/node_modules/npm/bin/npm-cli.js npm
 chmod +x node npm
 rm -rf "$TMP_DIR"
+echo "Node version "$NODE" successfully installed"
 EOF
 
 chmod +x "$INSTALLER_PATH"
+echo "node_installer successfully installed"

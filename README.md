@@ -16,11 +16,11 @@ This script is meant to provide simple global installation of node & npm.
 
 * as root:
 
-  `curl https://raw.githubusercontent.com/salsita/node_installer/master/install.sh | bash`
+  `curl -sS https://raw.githubusercontent.com/salsita/node_installer/master/install.sh | bash`
 
 * with `sudo`:
 
-  `curl https://raw.githubusercontent.com/salsita/node_installer/master/install.sh | sudo bash`
+  `curl -sS https://raw.githubusercontent.com/salsita/node_installer/master/install.sh | sudo bash`
 
 ## Usage
 
