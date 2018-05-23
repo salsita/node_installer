@@ -9,8 +9,7 @@ This script is meant to provide simple global installation of node & npm.
 
 ## Prerequisites
 
-* `wget`
-* `curl`
+* `wget` or `curl`
 
 ## Installation
 
@@ -18,9 +17,17 @@ This script is meant to provide simple global installation of node & npm.
 
   `curl -sS https://raw.githubusercontent.com/salsita/node_installer/master/install.sh | bash`
 
+  or
+
+  `wget -qO- https://raw.githubusercontent.com/salsita/node_installer/master/install.sh | bash`
+
 * with `sudo`:
 
   `curl -sS https://raw.githubusercontent.com/salsita/node_installer/master/install.sh | sudo bash`
+
+  or
+
+  `wget -qO- https://raw.githubusercontent.com/salsita/node_installer/master/install.sh | sudo bash`
 
 ## Usage
 

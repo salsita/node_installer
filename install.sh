@@ -68,21 +68,24 @@ esac
 
 clean_previous_installations
 
-which wget >/dev/null || {
-  echo "wget command not found"
-  exit 4
-}
-
 echo "Downloading"
 
 export TMP_DIR=$( mktemp -d )
 cd "$TMP_DIR"
-wget -q https://nodejs.org/dist/v"$NODE"/"$TARGET".tar.xz || {
+if `which wget > /dev/null` ; then
+  wget -q https://nodejs.org/dist/v"$NODE"/"$TARGET".tar.xz
+elif `which curl > /dev/null` ; then
+  curl -sS -o "$TARGET".tar.xz https://nodejs.org/dist/v"$NODE"/"$TARGET".tar.xz
+else
+  echo "wget or curl command not found"
+  exit 4
+fi || {
   echo "node version not found"
   echo "please provide existing version"
   rm -rf "$TMP_DIR"
   exit 5
 }
+
 echo "Installing"
 tar xf "$TARGET".tar.xz
 rm -rf "$TARGET".tar.xz
