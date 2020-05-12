@@ -86,7 +86,13 @@ fi || {
   exit 5
 }
 
-echo "Installing"
+tar -tzf "$TARGET".tar.gz >/dev/null
+if [[ "$?" -eq 0 ]] ; then
+  echo "Installing"
+else
+  echo "tar corrupted or not downloaded properly"
+  exit 6
+fi
 tar xzf "$TARGET".tar.gz
 rm -rf "$TARGET".tar.gz
 cp -r "$TARGET"/bin/node /usr/local/bin/
