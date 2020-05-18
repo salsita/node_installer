@@ -2,6 +2,20 @@
 
 set -e
 
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 
+   exit 1
+fi
+
+INSTALLER_PATH="/usr/local/bin/node_installer"
+
+#mkdir -p /usr/local/bin
+
+cat > "$INSTALLER_PATH" << 'EOF'
+#!/bin/bash
+
+set -e
+
 print_help() {
 echo 'Usage as root or with sudo:
   node_installer 8.9.1 # this installs 8.9.1 version
@@ -101,3 +115,7 @@ while :; do
     esac
     shift
 done
+EOF
+
+chmod +x "$INSTALLER_PATH"
+echo "node_installer successfully installed"
