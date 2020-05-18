@@ -86,14 +86,8 @@ else
   echo "tar corrupted or not downloaded properly"
   exit 6
 fi
-tar xzf "$TARGET".tar.gz
-rm -rf "$TARGET".tar.gz
-cp -r "$TARGET"/bin/node /usr/local/bin/
-mkdir -p /usr/local/lib
-cp -r "$TARGET"/lib/node_modules /usr/local/lib/
-cd /usr/local/bin
-ln -s ../lib/node_modules/npm/bin/npm-cli.js npm
-chmod +x node npm
+cd /usr/local
+tar --strip-components 1 -xzf "$TMP_DIR"/"$TARGET".tar.gz
 rm -rf "$TMP_DIR"
 echo "Node version "$NODE" successfully installed"
 
