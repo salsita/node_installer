@@ -96,3 +96,14 @@ ln -s ../lib/node_modules/npm/bin/npm-cli.js npm
 chmod +x node npm
 rm -rf "$TMP_DIR"
 echo "Node version "$NODE" successfully installed"
+
+while :; do
+    case $2 in
+        -y|--yarn)
+        echo "Installing yarn via npm"
+        npm install -g yarn
+        ;;
+        *) break
+    esac
+    shift
+done
