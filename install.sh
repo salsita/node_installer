@@ -9,8 +9,6 @@ fi
 
 INSTALLER_PATH="/usr/local/bin/node_installer"
 
-#mkdir -p /usr/local/bin
-
 cat > "$INSTALLER_PATH" << 'EOF'
 #!/bin/bash
 
