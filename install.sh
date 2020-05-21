@@ -11,16 +11,16 @@ INSTALLER_PATH="/usr/local/bin/node_installer"
 
 cat > "$INSTALLER_PATH" << 'EOF'
 #!/bin/bash
-
 set -e
 
+#Define functions
 print_help() {
 echo 'Usage as root or with sudo:
-  node_installer 8.9.1 # this installs 8.9.1 version
+  node_installer 8.9.1 or node_installer v8.9.1 # this installs 8.9.1 version
+  node_installer 8.9.1 --yarn or node_installer --yarn 8.9.1 # this installs 8.9.1 version with yarn globally "npm install -g yarn"
   node_installer clean # this cleans your system from older installations done via this script
   node_installer help # prints this help'
 }
-
 clean_previous_installations() {
   echo "Cleaning previous node installations"
   rm -rf /usr/local/bin/node
@@ -28,6 +28,7 @@ clean_previous_installations() {
   rm -rf /usr/local/lib/node_modules
 }
 
+#Check positional arguments
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root"
    print_help
@@ -44,6 +45,11 @@ if [[ "$1" == 'help' ]] || [[ -z "$1" ]] ; then
   exit 0
 fi
 
+if [[ "$1" == "--yarn" ]] ; then
+  shift
+  YARN=yarn
+fi
+
 if [[ ! "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ ! "$1" =~ v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "Please provide existing node version in 'x.y.z' or v'x.y.z' format"
   exit 2
@@ -57,6 +63,7 @@ elif [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] ; then
   NODE=v"$1"
 fi
 
+#Download node binaries
 TARGET=
 case $(uname) in
   "Linux")
@@ -70,11 +77,8 @@ case $(uname) in
     exit 3
     ;;
 esac
-
 clean_previous_installations
-
 echo "Downloading"
-
 export TMP_DIR=$( mktemp -d )
 cd "$TMP_DIR"
 if `which wget > /dev/null` ; then
@@ -90,7 +94,6 @@ fi || {
   rm -rf "$TMP_DIR"
   exit 5
 }
-
 tar -tzf "$TARGET".tar.gz >/dev/null
 if [[ "$?" -eq 0 ]] ; then
   echo "Installing"
@@ -98,14 +101,17 @@ else
   echo "tar corrupted or not downloaded properly"
   exit 6
 fi
+
+#Node installation
 cd /usr/local
 tar --strip-components 1 -xzf "$TMP_DIR"/"$TARGET".tar.gz
 rm -rf "$TMP_DIR"
 echo "Node version "$NODE" successfully installed"
 
+#Yarn installation
 while :; do
     case $2 in
-        -y|--yarn)
+        --yarn)
         echo "Installing yarn via npm"
         npm install -g yarn
         ;;
@@ -113,6 +119,10 @@ while :; do
     esac
     shift
 done
+if [[ ! -z "$YARN" ]] ; then
+  echo "Installing yarn via npm"
+  npm install -g $YARN
+fi
 EOF
 
 chmod +x "$INSTALLER_PATH"
