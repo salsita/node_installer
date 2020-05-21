@@ -7,11 +7,15 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+mkdir -p /usr/local/bin
+
 INSTALLER_PATH="/usr/local/bin/node_installer"
 
 cat > "$INSTALLER_PATH" << 'EOF'
 #!/bin/bash
 set -e
+
+mkdir -p /usr/local/lib/nodejs
 
 #Define functions
 print_help() {
@@ -26,6 +30,7 @@ clean_previous_installations() {
   rm -rf /usr/local/bin/node
   rm -rf /usr/local/bin/npm
   rm -rf /usr/local/lib/node_modules
+  rm -rf /usr/local/lib/nodejs/node-*
 }
 
 #Check positional arguments
@@ -103,10 +108,10 @@ else
 fi
 
 #Node installation
-cd /usr/local
-tar --strip-components 1 -xzf "$TMP_DIR"/"$TARGET".tar.gz
-rm -rf "$TMP_DIR"
-echo "Node version "$NODE" successfully installed"
+tar -xJf "$TMP_DIR"/"$TARGET".tar.gz -C /usr/local/lib/nodejs
+ln -s /usr/local/lib/nodejs/$TARGET/bin/node /usr/local/bin/node
+ln -s /usr/local/lib/nodejs/$TARGET/bin/npm /usr/local/bin/npm
+npm config set prefix /usr/local
 
 #Yarn installation
 while :; do
