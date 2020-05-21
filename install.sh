@@ -7,9 +7,9 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-mkdir -p /usr/local/bin
-
 INSTALLER_PATH="/usr/local/bin/node_installer"
+
+mkdir -p /usr/local/bin
 
 cat > "$INSTALLER_PATH" << 'EOF'
 #!/bin/bash
@@ -82,7 +82,16 @@ case $(uname) in
     exit 3
     ;;
 esac
-clean_previous_installations
+
+#Check for previous versions
+PREVIOUS_NODE=`ls -l /usr/local/lib/nodejs/ | awk '{print $9}'`
+if [[ ! -z "$PREVIOUS_NODE" ]] ; then
+  echo "Older node version exists, relinking to newer version after extraction"
+  rm /usr/local/bin/node
+  rm /usr/local/bin/npm
+fi
+
+
 echo "Downloading"
 export TMP_DIR=$( mktemp -d )
 cd "$TMP_DIR"
