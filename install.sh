@@ -33,6 +33,12 @@ clean_previous_installations() {
   rm -rf /usr/local/lib/nodejs/node-*
 }
 
+remove_broken_symlinks() {
+  find -L /usr/local/bin -maxdepth 1 -type l
+  find -L /usr/local/bin -maxdepth 1 -type l -exec rm -- {} +
+}
+
+
 #Check positional arguments
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root"
@@ -91,6 +97,7 @@ if [[ ! -z "$PREVIOUS_NODE" ]] ; then
   rm /usr/local/bin/npm
 fi
 
+
 echo "Downloading"
 export TMP_DIR=$( mktemp -d )
 cd "$TMP_DIR"
@@ -127,6 +134,7 @@ while :; do
         --yarn)
         echo "Installing yarn via npm"
         npm install -g yarn
+#        ln -s /usr/local/lib/nodejs/$TARGET/bin/yarn /usr/local/bin/yarn
         ;;
         *) break
     esac
@@ -135,7 +143,11 @@ done
 if [[ ! -z "$YARN" ]] ; then
   echo "Installing yarn via npm"
   npm install -g $YARN
+#  ln -s /usr/local/lib/nodejs/$TARGET/bin/yarn /usr/local/bin/yarn
 fi
+
+#Remove broken symlinks
+remove_broken_symlinks
 EOF
 
 chmod +x "$INSTALLER_PATH"
