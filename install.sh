@@ -15,7 +15,7 @@ cat > "$INSTALLER_PATH" << 'EOF'
 #!/bin/bash
 set -e
 
-mkdir -p /usr/local/lib/nodejs
+mkdir -p /usr/local/lib/nodejs # For installation of multiple node versions inside
 
 #Define functions
 print_help() {
@@ -37,7 +37,6 @@ remove_broken_symlinks() {
   find -L /usr/local/bin -maxdepth 1 -type l
   find -L /usr/local/bin -maxdepth 1 -type l -exec rm -- {} +
 }
-
 
 #Check positional arguments
 if [[ $EUID -ne 0 ]]; then
@@ -89,14 +88,13 @@ case $(uname) in
     ;;
 esac
 
-#Check for previous versions
+#Check for previous versions and prepare for new installation
 PREVIOUS_NODE=`ls -l /usr/local/lib/nodejs/ | awk '{print $9}'`
 if [[ ! -z "$PREVIOUS_NODE" ]] ; then
   echo "Older node version exists, relinking to newer version after extraction"
   rm /usr/local/bin/node
   rm /usr/local/bin/npm
 fi
-
 
 echo "Downloading"
 export TMP_DIR=$( mktemp -d )
@@ -114,7 +112,7 @@ fi || {
   rm -rf "$TMP_DIR"
   exit 5
 }
-tar -tzf "$TARGET".tar.gz >/dev/null
+tar -tzf "$TARGET".tar.gz >/dev/null  # Test the tar file downloaded properly or not
 if [[ "$?" -eq 0 ]] ; then
   echo "Installing"
 else
@@ -134,7 +132,6 @@ while :; do
         --yarn)
         echo "Installing yarn via npm"
         npm install -g yarn
-#        ln -s /usr/local/lib/nodejs/$TARGET/bin/yarn /usr/local/bin/yarn
         ;;
         *) break
     esac
@@ -143,7 +140,6 @@ done
 if [[ ! -z "$YARN" ]] ; then
   echo "Installing yarn via npm"
   npm install -g $YARN
-#  ln -s /usr/local/lib/nodejs/$TARGET/bin/yarn /usr/local/bin/yarn
 fi
 
 #Remove broken symlinks
