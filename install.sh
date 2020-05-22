@@ -91,7 +91,6 @@ if [[ ! -z "$PREVIOUS_NODE" ]] ; then
   rm /usr/local/bin/npm
 fi
 
-
 echo "Downloading"
 export TMP_DIR=$( mktemp -d )
 cd "$TMP_DIR"
