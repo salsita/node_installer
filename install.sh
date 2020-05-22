@@ -45,6 +45,12 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+if [[ $# -gt 2 ]] ; then
+  echo "Script supports maximum two arguments"
+  print_help
+  exit 0
+fi
+
 if [[ "$1" == 'clean' ]] ; then
   clean_previous_installations
   exit 0
