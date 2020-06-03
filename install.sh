@@ -23,6 +23,7 @@ echo 'Usage as root or with sudo:
   node_installer 8.9.1 or node_installer v8.9.1 # this installs 8.9.1 version
   node_installer 8.9.1 --yarn or node_installer --yarn 8.9.1 # this installs 8.9.1 version with yarn globally "npm install -g yarn"
   node_installer clean # this cleans your system from older installations done via this script
+  node_installer clean-broken # removes broken symlinks
   node_installer help # prints this help'
 }
 clean_previous_installations() {
@@ -32,52 +33,61 @@ clean_previous_installations() {
   rm -rf /usr/local/lib/node_modules
   rm -rf /usr/local/lib/nodejs/node-*
 }
-
 remove_broken_symlinks() {
   find -L /usr/local/bin -maxdepth 1 -type l
   find -L /usr/local/bin -maxdepth 1 -type l -exec rm -- {} +
 }
 
-#Check positional arguments
+#Check if script is run by root user
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root"
    print_help
    exit 1
 fi
 
+#Check positional arguments
+if [[ $# -eq 0 ]] ; then
+  echo "No parameters specified"
+  print_help
+fi
 if [[ $# -gt 2 ]] ; then
   echo "Script supports maximum two arguments"
   print_help
   exit 0
 fi
-
-if [[ "$1" == 'clean' ]] ; then
-  clean_previous_installations
-  exit 0
-fi
-
-if [[ "$1" == 'help' ]] || [[ -z "$1" ]] ; then
-  print_help
-  exit 0
-fi
-
-if [[ "$1" == "--yarn" ]] ; then
+while [ ! -z $1 ] ; do
+  case $1 in
+    --yarn)
+      YARN=yarn
+      ;;
+    [0-9]*.*[0-9]*.*[0-9]*)
+      NODE=v"$1"
+      echo "node version in 'x.y.z' format"
+      echo $NODE
+      ;;
+    v[0-9]*.*[0-9]*.*[0-9]*)
+      NODE="$1"
+      echo  "node version in v'x.y.z' format"
+      echo $NODE
+      ;;
+    clean)
+      clean_previous_installations
+      exit 0
+      ;;
+    clean-broken)
+      remove_broken_symlinks
+      exit 0
+      ;;
+     help)
+       print_help
+       exit 0
+      ;;
+    *)
+      echo wrong
+      exit 1
+  esac
   shift
-  YARN=yarn
-fi
-
-if [[ ! "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ ! "$1" =~ v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Please provide existing node version in 'x.y.z' or v'x.y.z' format"
-  exit 2
-fi
-
-if [[ "$1" =~ v[0-9]+\.[0-9]+\.[0-9]+$ ]] ; then
-  echo "node version in v'x.y.z' format"
-  NODE="$1"
-elif [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] ; then
-  echo "node version in 'x.y.z' format"
-  NODE=v"$1"
-fi
+done
 
 #Download node binaries
 TARGET=
@@ -103,7 +113,6 @@ if [[ ! -z "$PREVIOUS_NODE" ]] && [[ -f /usr/local/bin/node ]] ; then
 else
   echo "Previous versions do not exist"
 fi
-
 echo "Downloading"
 export TMP_DIR=$( mktemp -d )
 cd "$TMP_DIR"
