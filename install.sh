@@ -96,10 +96,12 @@ esac
 
 #Check for previous versions and prepare for new installation
 PREVIOUS_NODE=`ls -l /usr/local/lib/nodejs/ | awk '{print $9}'`
-if [[ ! -z "$PREVIOUS_NODE" ]] ; then
+if [[ ! -z "$PREVIOUS_NODE" ]] && [[ -f /usr/local/bin/node ]] ; then
   echo "Older node version exists, relinking to newer version after extraction"
   rm /usr/local/bin/node
   rm /usr/local/bin/npm
+else
+  echo "Previous versions do not exist"
 fi
 
 echo "Downloading"
