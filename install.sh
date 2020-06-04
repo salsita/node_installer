@@ -13,7 +13,7 @@ mkdir -p /usr/local/bin
 
 cat > "$INSTALLER_PATH" << 'EOF'
 #!/bin/bash
-set -e
+set -eo pipefail
 
 mkdir -p /usr/local/lib/nodejs # For installation of multiple node versions inside
 
@@ -24,6 +24,7 @@ echo 'Usage as root or with sudo:
   node_installer 8.9.1 --yarn or node_installer --yarn 8.9.1 # this installs 8.9.1 version with yarn globally "npm install -g yarn"
   node_installer clean # this cleans your system from older installations done via this script
   node_installer clean-broken # removes broken symlinks
+  node_installer rm-node 8.9.1 # removes the specified node version
   node_installer help # prints this help'
 }
 clean_previous_installations() {
@@ -36,6 +37,22 @@ clean_previous_installations() {
 remove_broken_symlinks() {
   find -L /usr/local/bin -maxdepth 1 -type l
   find -L /usr/local/bin -maxdepth 1 -type l -exec rm -- {} +
+}
+remove_node_version() {
+  CURRENT_NODE=`node --version`
+  NODE_DIR=`ls -lrt /usr/local/lib/nodejs | grep *$VERSION* | awk '{print $9}'`
+  if [[ "$CURRENT_NODE" == v"$VERSION" ]] ; then
+    echo "Requested to remove current node version"
+    rm -rf /usr/local/lib/nodejs/node-v$VERSION-*
+    rm -rf /usr/local/bin/node
+    rm -rf /usr/local/bin/npm
+    rm -rf /usr/local/lib/node_modules
+  elif [[ -z "$NODE_DIR" ]] ; then
+    echo "Specified node version does not exist"
+  else
+    echo "Removing node version $VERSION"
+    rm -rf /usr/local/lib/nodejs/node-v$VERSION-*
+fi
 }
 
 #Check if script is run by root user
@@ -76,6 +93,11 @@ while [ ! -z $1 ] ; do
       ;;
     clean-broken)
       remove_broken_symlinks
+      exit 0
+      ;;
+    rm-node)
+      VERSION=$2
+      remove_node_version
       exit 0
       ;;
      help)
