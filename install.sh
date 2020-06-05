@@ -40,7 +40,7 @@ remove_broken_symlinks() {
 }
 remove_node_version() {
   CURRENT_NODE=`node --version`
-  NODE_DIR=`ls -lrt /usr/local/lib/nodejs | grep *$VERSION* | awk '{print $9}'`
+  NODE_DIR=`ls -lrt /usr/local/lib/nodejs | grep $VERSION | awk '{print $9}'`
   if [[ "$CURRENT_NODE" == v"$VERSION" ]] ; then
     echo "Requested to remove current node version"
     rm -rf /usr/local/lib/nodejs/node-v$VERSION-*
