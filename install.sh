@@ -55,7 +55,8 @@ NODE="$1"
 TARGET=
 case $(uname) in
   "Linux")
-    TARGET="node-v"$NODE"-linux-x64"
+    [[ $(uname -m) == "aarch64" ]] && ARCH=arm64
+    TARGET="node-v"$NODE"-linux-${ARCH-x64}"
     ;;
   "Darwin")
     TARGET="node-v"$NODE"-darwin-x64"
