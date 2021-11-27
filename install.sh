@@ -17,16 +17,22 @@ cat > "$INSTALLER_PATH" << 'EOF'
 set -e
 
 print_help() {
-echo 'Usage as root or with sudo:
+cat <<'eof'
+Usage as root or with sudo:
+  node_installer v8.9.1 --yarn --npx # this installs 8.9.1 version, with yarn and links npx
   node_installer 8.9.1 # this installs 8.9.1 version
   node_installer clean # this cleans your system from older installations done via this script
-  node_installer help # prints this help'
+  node_installer help # prints this help
+eof
 }
 
 clean_previous_installations() {
   echo "Cleaning previous node installations"
-  rm -rf /usr/local/bin/node
-  rm -rf /usr/local/bin/npm
+  rm -f /usr/local/bin/node
+  rm -f /usr/local/bin/npm
+  rm -f /usr/local/bin/npx
+  rm -f /usr/local/bin/yarn
+  rm -f /usr/local/bin/yarnpkg
   rm -rf /usr/local/lib/node_modules
 }
 
@@ -46,19 +52,39 @@ if [[ "$1" == 'help' ]] || [[ -z "$1" ]] ; then
   exit 0
 fi
 
-if [[ ! "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] ; then
-  echo "Please provide existing node version in 'x.y.z' format"
+if [[ ! "$1" =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$ ]] ; then
+  echo "Please provide existing node version in 'X.Y.Z' or 'vX.Y.Z' format"
   exit 2
 fi
 
 NODE="$1"
+if ! [[ $NODE =~ ^v ]] ; then
+  NODE=v$NODE
+fi
+YARN=false
+NPX=false
+
+shift
+while [[ $# != 0 ]] ; do
+  if [[ $1 == '--yarn' ]] ; then
+    YARN=true
+  elif [[ $1 == '--npx' ]] ; then
+    NPX=true
+  else
+    echo "Unknown parameter provided: $1"
+    print_help
+    exit 3
+  fi
+  shift
+done
+
 TARGET=
 case $(uname) in
   "Linux")
-    TARGET="node-v"$NODE"-linux-x64"
+    TARGET="node-${NODE}-linux-x64"
     ;;
   "Darwin")
-    TARGET="node-v"$NODE"-darwin-x64"
+    TARGET="node-${NODE}-darwin-x64"
     ;;
    *)
     echo "System not supported"
@@ -73,9 +99,9 @@ echo "Downloading"
 export TMP_DIR=$( mktemp -d )
 cd "$TMP_DIR"
 if `which wget > /dev/null` ; then
-  wget -q https://nodejs.org/dist/v"$NODE"/"$TARGET".tar.xz
+  wget -q https://nodejs.org/dist/"$NODE"/"$TARGET".tar.xz
 elif `which curl > /dev/null` ; then
-  curl -sS -o "$TARGET".tar.xz https://nodejs.org/dist/v"$NODE"/"$TARGET".tar.xz
+  curl -sS -o "$TARGET".tar.xz https://nodejs.org/dist/"$NODE"/"$TARGET".tar.xz
 else
   echo "wget or curl command not found"
   exit 4
@@ -95,6 +121,16 @@ cp -r "$TARGET"/lib/node_modules /usr/local/lib/
 cd /usr/local/bin
 ln -s ../lib/node_modules/npm/bin/npm-cli.js npm
 chmod +x node npm
+if [[ $NPX == true ]] ; then
+  echo "Linking nxp"
+  rm -f npx
+  ln -s ../lib/node_modules/npm/bin/npx-cli.js npx
+  chmod +x npx
+fi
+if [[ $YARN == true ]] ; then
+  echo "Installing yarn"
+  npm install -g yarn >/dev/null
+fi
 rm -rf "$TMP_DIR"
 echo "Node version "$NODE" successfully installed"
 EOF
