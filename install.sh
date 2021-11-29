@@ -30,9 +30,8 @@ clean_previous_installations() {
   echo "Cleaning previous node installations"
   rm -f /usr/local/bin/node
   rm -f /usr/local/bin/npm
-  rm -f /usr/local/bin/npx
-  rm -f /usr/local/bin/yarn
-  rm -f /usr/local/bin/yarnpkg
+  $1 # RM_YARN
+  $2 # RM_NPX
   rm -rf /usr/local/lib/node_modules
 }
 
@@ -42,19 +41,9 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-if [[ "$1" == 'clean' ]] ; then
-  clean_previous_installations
-  exit 0
-fi
-
 if [[ "$1" == 'help' ]] || [[ -z "$1" ]] ; then
   print_help
   exit 0
-fi
-
-if [[ ! "$1" =~ ^[v]?[0-9]+\.[0-9]+\.[0-9]+$ ]] ; then
-  echo "Please provide existing node version in 'X.Y.Z' or 'vX.Y.Z' format"
-  exit 2
 fi
 
 NODE="$1"
@@ -62,14 +51,18 @@ if ! [[ $NODE =~ ^v ]] ; then
   NODE=v$NODE
 fi
 YARN=false
+RM_YARN=":"
 NPX=false
+RM_NPX=":"
 
 shift
 while [[ $# != 0 ]] ; do
   if [[ $1 == '--yarn' ]] ; then
     YARN=true
+    RM_YARN="rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg"
   elif [[ $1 == '--npx' ]] ; then
     NPX=true
+    RM_NPX="rm -f /usr/local/bin/npx"
   else
     echo "Unknown parameter provided: $1"
     print_help
@@ -77,6 +70,16 @@ while [[ $# != 0 ]] ; do
   fi
   shift
 done
+
+if [[ "$NODE" == 'vclean' ]] ; then
+  clean_previous_installations "$RM_YARN" "$RM_NPX"
+  exit 0
+fi
+
+if [[ ! "$NODE" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] ; then
+  echo "Please provide existing node version in 'X.Y.Z' or 'vX.Y.Z' format"
+  exit 2
+fi
 
 TARGET=
 case $(uname) in
@@ -92,7 +95,7 @@ case $(uname) in
     ;;
 esac
 
-clean_previous_installations
+clean_previous_installations "$RM_YARN" "$RM_NPX"
 
 echo "Downloading"
 
