@@ -102,9 +102,9 @@ echo "Downloading"
 export TMP_DIR=$( mktemp -d )
 cd "$TMP_DIR"
 if `which wget > /dev/null` ; then
-  wget -q https://nodejs.org/dist/"$NODE"/"$TARGET".tar.xz
+  wget -q https://nodejs.org/dist/"$NODE"/"$TARGET".tar.gz
 elif `which curl > /dev/null` ; then
-  curl -sS -o "$TARGET".tar.xz https://nodejs.org/dist/"$NODE"/"$TARGET".tar.xz
+  curl -sS -o "$TARGET".tar.gz https://nodejs.org/dist/"$NODE"/"$TARGET".tar.gz
 else
   echo "wget or curl command not found"
   exit 4
@@ -116,8 +116,8 @@ fi || {
 }
 
 echo "Installing"
-tar xf "$TARGET".tar.xz
-rm -rf "$TARGET".tar.xz
+tar xf "$TARGET".tar.gz
+rm -rf "$TARGET".tar.gz
 cp -r "$TARGET"/bin/node /usr/local/bin/
 mkdir -p /usr/local/lib
 cp -r "$TARGET"/lib/node_modules /usr/local/lib/
