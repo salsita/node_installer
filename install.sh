@@ -20,6 +20,7 @@ print_help() {
 cat <<'eof'
 Usage as root or with sudo:
   node_installer v8.9.1 --yarn --npx # this installs 8.9.1 version, with yarn and links npx
+  node_installer v8.9.1 --cache /path # stores fetched install files to cache location. Using those and not fetching if present.
   node_installer 8.9.1 # this installs 8.9.1 version
   node_installer clean # this cleans your system from older installations done via this script
   node_installer help # prints this help
@@ -33,6 +34,25 @@ clean_previous_installations() {
   $1 # RM_YARN
   $2 # RM_NPX
   rm -rf /usr/local/lib/node_modules
+}
+
+download() {
+  echo "Downloading"
+
+  cd "$TMP_DIR"
+  if `which wget > /dev/null` ; then
+    wget -q https://nodejs.org/dist/"$NODE"/"$TARGET".tar.gz
+  elif `which curl > /dev/null` ; then
+    curl -sS -o "$TARGET".tar.gz https://nodejs.org/dist/"$NODE"/"$TARGET".tar.gz
+  else
+    echo "wget or curl command not found"
+    exit 4
+  fi || {
+    echo "node version not found"
+    echo "please provide existing version"
+    rm -rf "$TMP_DIR"
+    exit 5
+  }
 }
 
 if [[ $EUID -ne 0 ]]; then
@@ -54,6 +74,7 @@ YARN=false
 RM_YARN=":"
 NPX=false
 RM_NPX=":"
+INSTALL_FILES_CACHE=
 
 shift
 while [[ $# != 0 ]] ; do
@@ -63,6 +84,13 @@ while [[ $# != 0 ]] ; do
   elif [[ $1 == '--npx' ]] ; then
     NPX=true
     RM_NPX="rm -f /usr/local/bin/npx"
+  elif [[ $1 == --cache ]] && [[ -z "$2" ]] ; then
+    echo "No argument for --cache"
+    print_help
+    exit 3
+  elif [[ $1 == --cache ]] ; then
+    INSTALL_FILES_CACHE="$2"
+    shift 2
   else
     echo "Unknown parameter provided: $1"
     print_help
@@ -97,23 +125,22 @@ esac
 
 clean_previous_installations "$RM_YARN" "$RM_NPX"
 
-echo "Downloading"
-
 export TMP_DIR=$( mktemp -d )
-cd "$TMP_DIR"
-if `which wget > /dev/null` ; then
-  wget -q https://nodejs.org/dist/"$NODE"/"$TARGET".tar.gz
-elif `which curl > /dev/null` ; then
-  curl -sS -o "$TARGET".tar.gz https://nodejs.org/dist/"$NODE"/"$TARGET".tar.gz
+
+if [[ -z "$INSTALL_FILES_CACHE" ]] ; then
+  download
 else
-  echo "wget or curl command not found"
-  exit 4
-fi || {
-  echo "node version not found"
-  echo "please provide existing version"
-  rm -rf "$TMP_DIR"
-  exit 5
-}
+  mkdir -p "$INSTALL_FILES_CACHE"
+  cd "$INSTALL_FILES_CACHE"
+  if [[ -f "$TARGET.tar.gz" ]] ; then
+    echo "Using $TARGET.tar.gz from cache"
+  else
+    echo "No $TARGET.tar.gz  in cache"
+    rm -rf "$TARGET.tar.gz"
+    download
+  fi
+  cp "$TARGET.tar.gz" "$TMP_DIR"
+fi
 
 echo "Installing"
 tar xf "$TARGET".tar.gz
