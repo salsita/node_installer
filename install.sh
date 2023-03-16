@@ -90,7 +90,7 @@ while [[ $# != 0 ]] ; do
     exit 3
   elif [[ $1 == --cache ]] ; then
     INSTALL_FILES_CACHE="$2"
-    shift 2
+    shift
   else
     echo "Unknown parameter provided: $1"
     print_help
