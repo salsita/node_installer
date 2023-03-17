@@ -72,12 +72,14 @@ NPX=false
 RM_NPX=":"
 INSTALL_FILES_CACHE=
 
+set +e
 PARSED_ARGUMENTS=$(getopt -n node_installer -o ync: --long yarn,npx,cache: -- "$@")
 VALID_ARGUMENTS=$?
 if [ "$VALID_ARGUMENTS" != "0" ]; then
   print_help
   exit 1
 fi
+set -e
 
 eval set -- "$PARSED_ARGUMENTS"
 while :
