@@ -19,7 +19,7 @@ set -e
 print_help() {
 cat <<'eof'
 Usage as root or with sudo:
-  node_installer v8.9.1 --yarn --npx # this installs 8.9.1 version, with yarn and links npx
+  node_installer v8.9.1 --yarn --npx # no-op options. Present for compatibility. Yarn and npx are always installed.
   node_installer v8.9.1 --cache /path # stores fetched install files to cache location. Using those and not fetching if present.
   node_installer 8.9.1 # this installs 8.9.1 version
   node_installer clean # this cleans your system from older installations done via this script
@@ -31,8 +31,8 @@ clean_previous_installations() {
   echo "Cleaning previous node installations"
   rm -f /usr/local/bin/node
   rm -f /usr/local/bin/npm
-  $1 # RM_YARN
-  $2 # RM_NPX
+  rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg
+  rm -f /usr/local/bin/npx
   rm -rf /usr/local/lib/node_modules
 }
 
@@ -66,12 +66,10 @@ if [[ "$1" == 'help' ]] || [[ -z "$1" ]] ; then
   exit 0
 fi
 
-YARN=false
-RM_YARN=":"
-NPX=false
-RM_NPX=":"
+# Defaults for options
 INSTALL_FILES_CACHE=
 
+# disable -e for this block to allow print_help when getopt exits with non-zero
 set +e
 PARSED_ARGUMENTS=$(getopt -n node_installer -o ync: --long yarn,npx,cache: -- "$@")
 VALID_ARGUMENTS=$?
@@ -85,8 +83,8 @@ eval set -- "$PARSED_ARGUMENTS"
 while :
 do
   case "$1" in
-    -y | --yarn)  YARN=true ; RM_YARN="rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg" ; shift ;;
-    -n | --npx)   NPX=true  ; RM_NPX="rm -f /usr/local/bin/npx" ; shift ;;
+    -y | --yarn)  echo "Yarn is always installed. '--yarn' is deprecated." ; shift ;;
+    -n | --npx)   echo "Npx is always installed. '--npx' is deprecated."; shift ;;
     -c | --cache) INSTALL_FILES_CACHE="$2" ; shift 2 ;;
     --)           shift; break ;;
     *) echo "Unexpected option: $1 - this should not happen." ; print_help ; exit 1 ;;
@@ -132,7 +130,7 @@ case $(uname) in
     ;;
 esac
 
-clean_previous_installations "$RM_YARN" "$RM_NPX"
+clean_previous_installations
 
 export TMP_DIR=$( mktemp -d )
 
@@ -160,16 +158,15 @@ cp -r "$TARGET"/lib/node_modules /usr/local/lib/
 cd /usr/local/bin
 ln -s ../lib/node_modules/npm/bin/npm-cli.js npm
 chmod +x node npm
-if [[ $NPX == true ]] ; then
-  echo "Linking nxp"
-  rm -f npx
-  ln -s ../lib/node_modules/npm/bin/npx-cli.js npx
-  chmod +x npx
-fi
-if [[ $YARN == true ]] ; then
-  echo "Installing yarn"
-  npm install -g yarn >/dev/null
-fi
+
+echo "Linking nxp"
+rm -f npx
+ln -s ../lib/node_modules/npm/bin/npx-cli.js npx
+chmod +x npx
+
+echo "Installing yarn"
+npm install -g yarn >/dev/null
+
 rm -rf "$TMP_DIR"
 echo "Node version "$NODE" successfully installed"
 EOF
