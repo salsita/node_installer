@@ -82,11 +82,33 @@ eval set -- "$PARSED_ARGUMENTS"
 while :
 do
   case "$1" in
-    -y | --yarn)  echo "Yarn is always installed. '--yarn' is deprecated." ; shift ;;
-    -n | --npx)   echo "Npx is always installed. '--npx' is deprecated."; shift ;;
-    -c | --cache) INSTALL_FILES_CACHE="$2" ; shift 2 ;;
-    --)           shift; break ;;
-    *) echo "Unexpected option: $1 - this should not happen." ; print_help ; exit 1 ;;
+    -y | --yarn)
+      echo "Yarn is always installed. '--yarn' is deprecated."
+      shift
+      ;;
+
+    -n | --npx)
+      echo "Npx is always installed. '--npx' is deprecated."
+      shift
+      ;;
+
+    -c | --cache)
+      INSTALL_FILES_CACHE="$2"
+      echo "Caching fetched install files. Path to cache: $INSTALL_FILES_CACHE"
+      shift 2
+      ;;
+
+    --)
+      shift
+      break
+      ;;
+
+    *)
+      echo "Unexpected option: $1 - this should not happen."
+      print_help
+      exit 1
+      ;;
+
   esac
 done
 
