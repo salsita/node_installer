@@ -39,7 +39,6 @@ clean_previous_installations() {
 download() {
   echo "Downloading"
 
-  cd "$TMP_DIR"
   if `which wget > /dev/null` ; then
     wget -q https://nodejs.org/dist/"$NODE"/"$TARGET".tar.gz
   elif `which curl > /dev/null` ; then
@@ -135,10 +134,11 @@ clean_previous_installations
 export TMP_DIR=$( mktemp -d )
 
 if [[ -z "$INSTALL_FILES_CACHE" ]] ; then
+  cd "$TMP_DIR"
   download
 else
-  mkdir -p "$INSTALL_FILES_CACHE"
-  cd "$INSTALL_FILES_CACHE"
+  mkdir -p -- "$INSTALL_FILES_CACHE"
+  cd -- "$INSTALL_FILES_CACHE"
   if [[ -f "$TARGET.tar.gz" ]] ; then
     echo "Using $TARGET.tar.gz from cache"
   else
@@ -150,6 +150,7 @@ else
 fi
 
 echo "Installing"
+cd "$TMP_DIR"
 tar xf "$TARGET".tar.gz
 rm -rf "$TARGET".tar.gz
 cp -r "$TARGET"/bin/node /usr/local/bin/
