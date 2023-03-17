@@ -19,7 +19,8 @@ set -e
 print_help() {
 cat <<'eof'
 Usage as root or with sudo:
-  node_installer v8.9.1 --yarn --npx # this installs 8.9.1 version, with yarn and links npx
+  node_installer v8.9.1 --yarn --npx # no-op options. Present for compatibility. Yarn and npx are always installed.
+  node_installer v8.9.1 --cache /path # stores fetched install files to cache location. Using those and not fetching if present.
   node_installer 8.9.1 # this installs 8.9.1 version
   node_installer clean # this cleans your system from older installations done via this script
   node_installer help # prints this help
@@ -30,9 +31,27 @@ clean_previous_installations() {
   echo "Cleaning previous node installations"
   rm -f /usr/local/bin/node
   rm -f /usr/local/bin/npm
-  $1 # RM_YARN
-  $2 # RM_NPX
+  rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg
+  rm -f /usr/local/bin/npx
   rm -rf /usr/local/lib/node_modules
+}
+
+download() {
+  echo "Downloading"
+
+  if `which wget > /dev/null` ; then
+    wget -q https://nodejs.org/dist/"$NODE"/"$TARGET".tar.gz
+  elif `which curl > /dev/null` ; then
+    curl -sS -o "$TARGET".tar.gz https://nodejs.org/dist/"$NODE"/"$TARGET".tar.gz
+  else
+    echo "wget or curl command not found"
+    exit 4
+  fi || {
+    echo "node version not found"
+    echo "please provide existing version"
+    rm -rf "$TMP_DIR"
+    exit 5
+  }
 }
 
 if [[ $EUID -ne 0 ]]; then
@@ -46,30 +65,67 @@ if [[ "$1" == 'help' ]] || [[ -z "$1" ]] ; then
   exit 0
 fi
 
-NODE="$1"
+# Defaults for options
+INSTALL_FILES_CACHE=
+
+# disable -e for this block to allow print_help when getopt exits with non-zero
+set +e
+PARSED_ARGUMENTS=$(getopt -n node_installer -o ync: --long yarn,npx,cache: -- "$@")
+VALID_ARGUMENTS=$?
+if [ "$VALID_ARGUMENTS" != "0" ]; then
+  print_help
+  exit 1
+fi
+set -e
+
+eval set -- "$PARSED_ARGUMENTS"
+while :
+do
+  case "$1" in
+    -y | --yarn)
+      echo "Yarn is always installed. '--yarn' is deprecated."
+      shift
+      ;;
+
+    -n | --npx)
+      echo "Npx is always installed. '--npx' is deprecated."
+      shift
+      ;;
+
+    -c | --cache)
+      INSTALL_FILES_CACHE="$2"
+      echo "Caching fetched install files. Path to cache: $INSTALL_FILES_CACHE"
+      shift 2
+      ;;
+
+    --)
+      shift
+      break
+      ;;
+
+    *)
+      echo "Unexpected option: $1 - this should not happen."
+      print_help
+      exit 1
+      ;;
+
+  esac
+done
+
+NODE=
+if [[ "$#" -eq 0 ]] ; then
+  echo "Pass node version"
+  exit 1
+elif [[ "$#" -ne 1 ]] ; then
+  echo "Expected single positional argument (node version). Passed more: $@"
+  exit 1
+else
+  NODE="$1"
+fi
+
 if ! [[ $NODE =~ ^v ]] ; then
   NODE=v$NODE
 fi
-YARN=false
-RM_YARN=":"
-NPX=false
-RM_NPX=":"
-
-shift
-while [[ $# != 0 ]] ; do
-  if [[ $1 == '--yarn' ]] ; then
-    YARN=true
-    RM_YARN="rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg"
-  elif [[ $1 == '--npx' ]] ; then
-    NPX=true
-    RM_NPX="rm -f /usr/local/bin/npx"
-  else
-    echo "Unknown parameter provided: $1"
-    print_help
-    exit 3
-  fi
-  shift
-done
 
 if [[ "$NODE" == 'vclean' ]] ; then
   clean_previous_installations "$RM_YARN" "$RM_NPX"
@@ -95,27 +151,28 @@ case $(uname) in
     ;;
 esac
 
-clean_previous_installations "$RM_YARN" "$RM_NPX"
-
-echo "Downloading"
+clean_previous_installations
 
 export TMP_DIR=$( mktemp -d )
-cd "$TMP_DIR"
-if `which wget > /dev/null` ; then
-  wget -q https://nodejs.org/dist/"$NODE"/"$TARGET".tar.gz
-elif `which curl > /dev/null` ; then
-  curl -sS -o "$TARGET".tar.gz https://nodejs.org/dist/"$NODE"/"$TARGET".tar.gz
+
+if [[ -z "$INSTALL_FILES_CACHE" ]] ; then
+  cd "$TMP_DIR"
+  download
 else
-  echo "wget or curl command not found"
-  exit 4
-fi || {
-  echo "node version not found"
-  echo "please provide existing version"
-  rm -rf "$TMP_DIR"
-  exit 5
-}
+  mkdir -p -- "$INSTALL_FILES_CACHE"
+  cd -- "$INSTALL_FILES_CACHE"
+  if [[ -f "$TARGET.tar.gz" ]] ; then
+    echo "Using $TARGET.tar.gz from cache"
+  else
+    echo "No $TARGET.tar.gz  in cache"
+    rm -rf "$TARGET.tar.gz"
+    download
+  fi
+  cp "$TARGET.tar.gz" "$TMP_DIR"
+fi
 
 echo "Installing"
+cd "$TMP_DIR"
 tar xf "$TARGET".tar.gz
 rm -rf "$TARGET".tar.gz
 cp -r "$TARGET"/bin/node /usr/local/bin/
@@ -124,16 +181,15 @@ cp -r "$TARGET"/lib/node_modules /usr/local/lib/
 cd /usr/local/bin
 ln -s ../lib/node_modules/npm/bin/npm-cli.js npm
 chmod +x node npm
-if [[ $NPX == true ]] ; then
-  echo "Linking nxp"
-  rm -f npx
-  ln -s ../lib/node_modules/npm/bin/npx-cli.js npx
-  chmod +x npx
-fi
-if [[ $YARN == true ]] ; then
-  echo "Installing yarn"
-  npm install -g yarn >/dev/null
-fi
+
+echo "Linking nxp"
+rm -f npx
+ln -s ../lib/node_modules/npm/bin/npx-cli.js npx
+chmod +x npx
+
+echo "Installing yarn"
+npm install -g yarn >/dev/null
+
 rm -rf "$TMP_DIR"
 echo "Node version "$NODE" successfully installed"
 EOF
