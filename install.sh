@@ -66,38 +66,45 @@ if [[ "$1" == 'help' ]] || [[ -z "$1" ]] ; then
   exit 0
 fi
 
-NODE="$1"
-if ! [[ $NODE =~ ^v ]] ; then
-  NODE=v$NODE
-fi
 YARN=false
 RM_YARN=":"
 NPX=false
 RM_NPX=":"
 INSTALL_FILES_CACHE=
 
-shift
-while [[ $# != 0 ]] ; do
-  if [[ $1 == '--yarn' ]] ; then
-    YARN=true
-    RM_YARN="rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg"
-  elif [[ $1 == '--npx' ]] ; then
-    NPX=true
-    RM_NPX="rm -f /usr/local/bin/npx"
-  elif [[ $1 == --cache ]] && [[ -z "$2" ]] ; then
-    echo "No argument for --cache"
-    print_help
-    exit 3
-  elif [[ $1 == --cache ]] ; then
-    INSTALL_FILES_CACHE="$2"
-    shift
-  else
-    echo "Unknown parameter provided: $1"
-    print_help
-    exit 3
-  fi
-  shift
+PARSED_ARGUMENTS=$(getopt -n node_installer -o ync: --long yarn,npx,cache: -- "$@")
+VALID_ARGUMENTS=$?
+if [ "$VALID_ARGUMENTS" != "0" ]; then
+  print_help
+  exit 1
+fi
+
+eval set -- "$PARSED_ARGUMENTS"
+while :
+do
+  case "$1" in
+    -y | --yarn)  YARN=true ; RM_YARN="rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg" ; shift ;;
+    -n | --npx)   NPX=true  ; RM_NPX="rm -f /usr/local/bin/npx" ; shift ;;
+    -c | --cache) INSTALL_FILES_CACHE="$2" ; shift 2 ;;
+    --)           shift; break ;;
+    *) echo "Unexpected option: $1 - this should not happen." ; print_help ; exit 1 ;;
+  esac
 done
+
+NODE=
+if [[ "$#" -eq 0 ]] ; then
+  echo "Pass node version"
+  exit 1
+elif [[ "$#" -ne 1 ]] ; then
+  echo "Expected single positional argument (node version). Passed more: $@"
+  exit 1
+else
+  NODE="$1"
+fi
+
+if ! [[ $NODE =~ ^v ]] ; then
+  NODE=v$NODE
+fi
 
 if [[ "$NODE" == 'vclean' ]] ; then
   clean_previous_installations "$RM_YARN" "$RM_NPX"
