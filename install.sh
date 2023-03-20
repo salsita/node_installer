@@ -96,6 +96,10 @@ while [[ "$#" -ne 0 ]] ; do
   case "$1" in
     -c | --cache)
       INSTALL_FILES_CACHE="$2"
+      [[ -n "${INSTALL_FILES_CACHE}" ]] || {
+        echo "Cache path is empty"
+        exit 1
+      }
       echo "Caching fetched install files. Path to cache: $INSTALL_FILES_CACHE"
       shift 2
       ;;
