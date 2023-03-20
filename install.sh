@@ -105,7 +105,7 @@ while [[ "$#" -ne 0 ]] ; do
         echo "Cache path is empty"
         exit 1
       }
-      echo "Caching fetched install files. Path to cache: $INSTALL_FILES_CACHE"
+      echo "Setting cache folder: $INSTALL_FILES_CACHE"
       shift 2
       ;;
 
