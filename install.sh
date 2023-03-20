@@ -185,7 +185,7 @@ cd /usr/local/bin
 ln -s ../lib/node_modules/npm/bin/npm-cli.js npm
 chmod +x node npm
 
-echo "Linking nxp"
+echo "Linking npx"
 rm -f npx
 ln -s ../lib/node_modules/npm/bin/npx-cli.js npx
 chmod +x npx
