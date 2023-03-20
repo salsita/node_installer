@@ -88,6 +88,11 @@ if [[ "$1" == 'help' ]] || [[ -z "$1" ]] ; then
   exit 0
 fi
 
+if [[ "$1" == clean ]] ; then
+  clean_previous_installations
+  exit 0
+fi
+
 # Defaults for options
 NODE=
 INSTALL_FILES_CACHE=
@@ -128,11 +133,6 @@ fi
 
 if ! [[ $NODE =~ ^v ]] ; then
   NODE=v$NODE
-fi
-
-if [[ "$NODE" == 'vclean' ]] ; then
-  clean_previous_installations "$RM_YARN" "$RM_NPX"
-  exit 0
 fi
 
 if [[ ! "$NODE" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] ; then
