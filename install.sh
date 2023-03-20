@@ -54,8 +54,31 @@ download() {
   }
 }
 
+looks_like_version() {
+  [[ "$1" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}
+
+handle_positional_argument() {
+  if [[ -z "${NODE:-}" ]] ; then
+    if looks_like_version "$1" ; then
+      NODE="$1"
+    else
+      echo "Does not look like version number: $1"
+      exit 1
+    fi
+  else
+    if looks_like_version "$1" ; then
+      echo "Provide only one node version: $NODE $1"
+      exit 1
+    else
+      echo "Unrecognized: $1"
+      exit 1
+    fi
+  fi
+}
+
 if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root" 
+   echo "This script must be run as root"
    print_help
    exit 1
 fi
@@ -66,22 +89,17 @@ if [[ "$1" == 'help' ]] || [[ -z "$1" ]] ; then
 fi
 
 # Defaults for options
+NODE=
 INSTALL_FILES_CACHE=
 
-# disable -e for this block to allow print_help when getopt exits with non-zero
-set +e
-PARSED_ARGUMENTS=$(getopt -n node_installer -o ync: --long yarn,npx,cache: -- "$@")
-VALID_ARGUMENTS=$?
-if [ "$VALID_ARGUMENTS" != "0" ]; then
-  print_help
-  exit 1
-fi
-set -e
-
-eval set -- "$PARSED_ARGUMENTS"
-while :
-do
+while [[ "$#" -ne 0 ]] ; do
   case "$1" in
+    -c | --cache)
+      INSTALL_FILES_CACHE="$2"
+      echo "Caching fetched install files. Path to cache: $INSTALL_FILES_CACHE"
+      shift 2
+      ;;
+
     -y | --yarn)
       echo "Yarn is always installed. '--yarn' is deprecated."
       shift
@@ -92,35 +110,16 @@ do
       shift
       ;;
 
-    -c | --cache)
-      INSTALL_FILES_CACHE="$2"
-      echo "Caching fetched install files. Path to cache: $INSTALL_FILES_CACHE"
-      shift 2
-      ;;
-
-    --)
-      shift
-      break
-      ;;
-
     *)
-      echo "Unexpected option: $1 - this should not happen."
-      print_help
-      exit 1
+      handle_positional_argument "$1"
+      shift
       ;;
-
   esac
 done
 
-NODE=
-if [[ "$#" -eq 0 ]] ; then
-  echo "Pass node version"
+if [[ -z "${NODE}" ]] ; then
+  echo "Provide node version"
   exit 1
-elif [[ "$#" -ne 1 ]] ; then
-  echo "Expected single positional argument (node version). Passed more: $@"
-  exit 1
-else
-  NODE="$1"
 fi
 
 if ! [[ $NODE =~ ^v ]] ; then
