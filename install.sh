@@ -77,15 +77,15 @@ handle_positional_argument() {
   fi
 }
 
+if [[ "$1" == 'help' ]] || [[ -z "$1" ]] ; then
+  print_help
+  exit 0
+fi
+
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root"
    print_help
    exit 1
-fi
-
-if [[ "$1" == 'help' ]] || [[ -z "$1" ]] ; then
-  print_help
-  exit 0
 fi
 
 if [[ "$1" == clean ]] ; then
