@@ -67,10 +67,6 @@ function looks_like_version() {
   [[ "$1" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
 }
 
-function looks_like_verbose() {
-  [[ "$1" == "--verbose" ]]
-}
-
 function handle_positional_argument() {
   if [[ -z "${NODE:-}" ]] ; then
     if looks_like_version "$1" ; then
